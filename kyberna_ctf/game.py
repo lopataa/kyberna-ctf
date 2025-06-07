@@ -2,10 +2,10 @@ import time
 from playwright.sync_api import sync_playwright
 
 from . import network
+from .ai import AIBase, RandomAI
 
 
-def run_game(player_id: str) -> None:
-    """Run an interactive game session."""
+def _select_map(player_id: str) -> str:
     maps = network.get_maps(player_id)
     print("\nAvailable Maps:")
     for idx, name in enumerate(maps, start=1):
@@ -16,10 +16,10 @@ def run_game(player_id: str) -> None:
         raise ValueError("Invalid map selection.")
     selected_map = maps[choice - 1]
     print(f"Selected map: {selected_map}")
+    return selected_map
 
-    session_id, team_color = network.create_session(player_id, selected_map)
-    print(f"Session ID: {session_id}, Team Color: {team_color}")
 
+def _play_session(player_id: str, session_id: str, ai: AIBase | None = None) -> None:
     session_url = f"https://ctf.kyberna.cz/Session/{session_id}"
     print("Launching browser to display game board...")
     with sync_playwright() as pw:
@@ -42,9 +42,15 @@ def run_game(player_id: str) -> None:
                 break
 
             if player_state == "Ready":
-                direction = None
-                while direction not in {"1", "2", "3", "4", "5", "6"}:
-                    direction = input("Your turn! Enter move direction (1-6): ").strip()
+                if ai is None:
+                    direction = None
+                    while direction not in {"1", "2", "3", "4", "5", "6"}:
+                        direction = input("Your turn! Enter move direction (1-6): ").strip()
+                else:
+                    game_map = network.get_map(player_id, session_id)
+                    entities = network.get_entities(player_id, session_id)
+                    direction = str(ai.choose_move(game_map, entities))
+                    print(f"AI chose direction {direction}")
                 network.send_move(player_id, session_id, int(direction))
                 print("Move sent. Waiting for opponent...")
             else:
@@ -52,3 +58,19 @@ def run_game(player_id: str) -> None:
 
         browser.close()
 
+
+def run_game(player_id: str) -> None:
+    """Run a game session, either manually or with AI."""
+    mode = ""
+    while mode not in {"m", "a"}:
+        mode = input("Play manually or use AI? [m/a]: ").strip().lower()
+
+    map_name = _select_map(player_id)
+    if mode == "a":
+        ai = RandomAI()
+        session_id, team_color = network.create_session(player_id, map_name, session_type="Ai")
+    else:
+        ai = None
+        session_id, team_color = network.create_session(player_id, map_name, session_type="Manual")
+    print(f"Session ID: {session_id}, Team Color: {team_color}")
+    _play_session(player_id, session_id, ai)
