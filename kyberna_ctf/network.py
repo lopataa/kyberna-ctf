@@ -42,3 +42,22 @@ def send_move(player_id: str, session_id: str, direction: int):
     resp.raise_for_status()
     return resp.json() if resp.headers.get("Content-Type", "").startswith("application/json") else resp.text
 
+
+def get_map(player_id: str, session_id: str):
+    """Retrieve the current game map."""
+    resp = requests.post(
+        f"{BASE_URL}/Game/Map",
+        json={"playerId": player_id, "sessionId": session_id},
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+def get_entities(player_id: str, session_id: str):
+    """Retrieve all entities in the current session."""
+    resp = requests.post(
+        f"{BASE_URL}/Game/Entities",
+        json={"playerId": player_id, "sessionId": session_id},
+    )
+    resp.raise_for_status()
+    return resp.json()
