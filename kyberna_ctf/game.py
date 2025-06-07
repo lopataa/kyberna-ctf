@@ -1,4 +1,6 @@
 import time
+from datetime import datetime
+from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 from . import network
@@ -8,6 +10,28 @@ from .models import ALL_MODELS
 
 # Polling interval while waiting for the opponent or game to start.
 POLL_INTERVAL = 0.1
+
+# File used to persist game results
+SCORE_LOG_FILE = Path("scores.log")
+
+
+def _log_score(map_name: str, team_color: str, score) -> None:
+    """Append the map and scores to the score log file."""
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    SCORE_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with SCORE_LOG_FILE.open("a", encoding="utf-8") as f:
+        if isinstance(score, dict) and "Red" in score and "Blue" in score:
+            red = score.get("Red", 0)
+            blue = score.get("Blue", 0)
+            f.write(
+                f"{timestamp} | Map: {map_name} | Team: {team_color} | "
+                f"Red: {red}, Blue: {blue}\n"
+            )
+        else:
+            f.write(
+                f"{timestamp} | Map: {map_name} | Team: {team_color} | "
+                f"Score: {score}\n"
+            )
 
 
 def _select_map(player_id: str) -> str:
@@ -36,7 +60,13 @@ def _select_ai() -> type[AIBase]:
     return ALL_MODELS[names[choice - 1]]
 
 
-def _play_session(player_id: str, session_id: str, team_color: str, ai: AIBase | None = None) -> None:
+def _play_session(
+    player_id: str,
+    session_id: str,
+    team_color: str,
+    map_name: str,
+    ai: AIBase | None = None,
+) -> None:
     session_url = f"https://ctf.kyberna.cz/Session/{session_id}"
     print("Launching browser to display game board...")
     with sync_playwright() as pw:
@@ -67,6 +97,8 @@ def _play_session(player_id: str, session_id: str, team_color: str, ai: AIBase |
                     print(f"Score ratio ({team_color}/opponent): {ratio}")
                 else:
                     print(f"Final score: {score}")
+
+                _log_score(map_name, team_color, score)
                 break
 
             if player_state == "Ready":
@@ -111,4 +143,4 @@ def run_game(player_id: str) -> None:
         ai = None
         session_id, team_color = network.create_session(player_id, map_name, session_type="Manual")
     print(f"Session ID: {session_id}, Team Color: {team_color}")
-    _play_session(player_id, session_id, team_color, ai)
+    _play_session(player_id, session_id, team_color, map_name, ai)
