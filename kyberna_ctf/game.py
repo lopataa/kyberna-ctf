@@ -2,7 +2,8 @@ import time
 from playwright.sync_api import sync_playwright
 
 from . import network
-from .ai import AIBase, RandomAI
+from .ai import AIBase
+from .models import ALL_MODELS
 
 
 def _select_map(player_id: str) -> str:
@@ -17,6 +18,18 @@ def _select_map(player_id: str) -> str:
     selected_map = maps[choice - 1]
     print(f"Selected map: {selected_map}")
     return selected_map
+
+
+def _select_ai() -> type[AIBase]:
+    names = list(ALL_MODELS.keys())
+    print("\nAvailable AI models:")
+    for idx, name in enumerate(names, start=1):
+        print(f"{idx}. {name}")
+    choice = int(input("Choose an AI model by number: "))
+    if choice < 1 or choice > len(names):
+        raise ValueError("Invalid AI selection.")
+    print(f"Selected AI: {names[choice - 1]}")
+    return ALL_MODELS[names[choice - 1]]
 
 
 def _play_session(player_id: str, session_id: str, ai: AIBase | None = None) -> None:
@@ -67,8 +80,9 @@ def run_game(player_id: str) -> None:
 
     map_name = _select_map(player_id)
     if mode == "a":
-        ai = RandomAI()
+        ai_cls = _select_ai()
         session_id, team_color = network.create_session(player_id, map_name, session_type="Ai")
+        ai = ai_cls(team_color=team_color)
     else:
         ai = None
         session_id, team_color = network.create_session(player_id, map_name, session_type="Manual")
