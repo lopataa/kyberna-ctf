@@ -1,5 +1,5 @@
 from heapq import heappush, heappop
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 from ..ai import AIBase
 
@@ -79,6 +79,13 @@ class DijkstraAI(AIBase):
                     priority = new_cost + self._heuristic((nx, ny), goal)
                     heappush(queue, (priority, new_cost, (nx, ny), path + [direction]))
         return None
+
+    def _distance(
+        self, game_map: Dict, start: Tuple[int, int], goal: Tuple[int, int]
+    ) -> Optional[int]:
+        """Return shortest path length between two points."""
+        path = self._dijkstra(game_map, start, goal)
+        return len(path) if path is not None else None
 
     def _select_targets(self, entities: List[Dict]):
         player = None
