@@ -65,8 +65,10 @@ def _play_session(player_id: str, session_id: str, ai: AIBase | None = None) -> 
                 else:
                     game_map = network.get_map(player_id, session_id)
                     entities = network.get_entities(player_id, session_id)
+                    start = time.perf_counter()
                     direction = str(ai.choose_move(game_map, entities))
-                    print(f"AI chose direction {direction}")
+                    duration = time.perf_counter() - start
+                    print(f"AI chose direction {direction} in {duration:.2f}s")
                 network.send_move(player_id, session_id, int(direction))
                 print("Move sent. Waiting for opponent...")
             else:
