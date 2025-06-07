@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import deque
+import random
 from typing import Dict, List, Optional, Tuple
 
 from .dijkstra_ai import DijkstraAI, DIRS
@@ -218,10 +219,19 @@ class RatioAI(DijkstraAI):
             game_map, player, target, danger_field, opp_field, alpha, beta
         )
         if not path:
-            return 1
+            # Weighted search failed to produce a path. Instead of blindly
+            # returning ``1`` (up) which might point into a wall we pick any
+            # valid neighbouring cell.  This prevents the bot from repeatedly
+            # trying to walk into a wall when the pathfinder gets stuck.
+            moves = [
+                direction
+                for direction, _, _ in self._neighbors(game_map, player[0], player[1])
+            ]
+            return random.choice(moves) if moves else 1
 
         best_move = path[0]
-        nx, ny = player[0] + DIRS[best_move][0], player[1] + DIRS[best_move][1]
+        neighbors = {d: (nx, ny) for d, nx, ny in self._neighbors(game_map, player[0], player[1])}
+        nx, ny = neighbors.get(best_move, self._step(player[0], player[1], best_move))
         best_ratio = self._evaluate_move(
             game_map,
             (nx, ny),
@@ -235,13 +245,8 @@ class RatioAI(DijkstraAI):
         )
 
         # Try one sidestep alternative if available
-        for direction, (dx, dy) in DIRS.items():
+        for direction, (sx, sy) in neighbors.items():
             if direction == best_move:
-                continue
-            sx, sy = player[0] + dx, player[1] + dy
-            if sx < 0 or sy < 0 or sx >= game_map["width"] or sy >= game_map["height"]:
-                continue
-            if self._is_wall(game_map, sx, sy):
                 continue
             ratio_alt = self._evaluate_move(
                 game_map,
