@@ -54,7 +54,7 @@ class ShortestPathAI(AIBase):
                 flags.append((e["location"]["x"], e["location"]["y"]))
         return player, base, flags
 
-    def choose_move(self, game_map: dict, entities: list) -> int:
+    def choose_move(self, game_map: dict, entities: list, score: dict | None = None) -> int:
         if not self._path:
             player, base, flags = self._select_targets(entities)
             if player is None or base is None or not flags:

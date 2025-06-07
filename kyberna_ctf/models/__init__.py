@@ -3,6 +3,7 @@ from .shortest_path_ai import ShortestPathAI
 from .dijkstra_ai import DijkstraAI
 from .intercept_ai import InterceptAI
 from .intercept_ai2 import InterceptAI2
+from .ratio_ai import RatioAI
 
 ALL_MODELS = {
     "RandomAI": RandomAI,
@@ -10,4 +11,5 @@ ALL_MODELS = {
     "DijkstraAI": DijkstraAI,
     "InterceptAI": InterceptAI,
     "InterceptAI2": InterceptAI2,
+    "RatioAI": RatioAI,
 }

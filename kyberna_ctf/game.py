@@ -77,8 +77,9 @@ def _play_session(player_id: str, session_id: str, team_color: str, ai: AIBase |
                 else:
                     game_map = network.get_map(player_id, session_id)
                     entities = network.get_entities(player_id, session_id)
+                    score = network.get_score(player_id, session_id)
                     start = time.perf_counter()
-                    direction = str(ai.choose_move(game_map, entities))
+                    direction = str(ai.choose_move(game_map, entities, score))
                     duration = time.perf_counter() - start
                     print(f"AI chose direction {direction} in {duration:.2f}s")
                 try:

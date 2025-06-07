@@ -93,7 +93,7 @@ class DijkstraAI(AIBase):
                 flags.append((e["location"]["x"], e["location"]["y"]))
         return player, base, flags
 
-    def choose_move(self, game_map: Dict, entities: List[Dict]) -> int:
+    def choose_move(self, game_map: Dict, entities: List[Dict], score: Dict | None = None) -> int:
         player, base, flags = self._select_targets(entities)
         if player is None or base is None:
             return 1
