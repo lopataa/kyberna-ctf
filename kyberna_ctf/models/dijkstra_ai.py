@@ -49,6 +49,12 @@ class DijkstraAI(AIBase):
             if 0 <= nx < w and 0 <= ny < h and not self._is_wall(game_map, nx, ny):
                 yield direction, nx, ny
 
+    def _step(self, x: int, y: int, direction: int) -> Tuple[int, int]:
+        """Return neighbouring coordinates for a given direction."""
+        dq, dr = DIRS[direction]
+        q, r = _offset_to_axial(x, y)
+        return _axial_to_offset(q + dq, r + dr)
+
     def _heuristic(self, a: Tuple[int, int], b: Tuple[int, int]) -> int:
         aq, ar = _offset_to_axial(*a)
         bq, br = _offset_to_axial(*b)
