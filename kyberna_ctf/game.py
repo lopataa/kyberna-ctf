@@ -1,6 +1,7 @@
 import time
 from datetime import datetime
 from pathlib import Path
+from threading import Thread
 from playwright.sync_api import sync_playwright
 
 from . import network
@@ -128,19 +129,47 @@ def _play_session(
         browser.close()
 
 
-def run_game(player_id: str) -> None:
-    """Run a game session, either manually or with AI."""
-    mode = ""
-    while mode not in {"m", "a"}:
-        mode = input("Play manually or use AI? [m/a]: ").strip().lower()
+def run_game(player_id: str, ai_name: str | None = None, map_name: str | None = None) -> None:
+    """Run a game session, either manually or with a specific AI."""
 
-    map_name = _select_map(player_id)
+    if ai_name is None:
+        mode = ""
+        while mode not in {"m", "a"}:
+            mode = input("Play manually or use AI? [m/a]: ").strip().lower()
+    else:
+        mode = "a"
+
+    if map_name is None:
+        map_name = _select_map(player_id)
+
     if mode == "a":
-        ai_cls = _select_ai()
+        if ai_name is None:
+            ai_cls = _select_ai()
+        else:
+            try:
+                ai_cls = ALL_MODELS[ai_name]
+            except KeyError as exc:
+                raise ValueError(f"Unknown AI model: {ai_name}") from exc
         session_id, team_color = network.create_session(player_id, map_name, session_type="Ai")
         ai = ai_cls(team_color=team_color)
     else:
         ai = None
         session_id, team_color = network.create_session(player_id, map_name, session_type="Manual")
+
     print(f"Session ID: {session_id}, Team Color: {team_color}")
     _play_session(player_id, session_id, team_color, map_name, ai)
+
+
+def run_games(player_id: str, ai_names: list[str], map_name: str | None = None) -> None:
+    """Run multiple AI sessions concurrently."""
+    if map_name is None:
+        map_name = _select_map(player_id)
+
+    threads: list[Thread] = []
+    for name in ai_names:
+        t = Thread(target=run_game, args=(player_id, name, map_name))
+        t.start()
+        threads.append(t)
+
+    for t in threads:
+        t.join()
