@@ -15,6 +15,20 @@ DIRS = {
 }
 
 
+def _offset_to_axial(x: int, y: int) -> Tuple[int, int]:
+    """Convert odd-r offset coordinates to axial coordinates."""
+    q = x - (y - (y & 1)) // 2
+    r = y
+    return q, r
+
+
+def _axial_to_offset(q: int, r: int) -> Tuple[int, int]:
+    """Convert axial coordinates back to odd-r offset."""
+    x = q + (r - (r & 1)) // 2
+    y = r
+    return x, y
+
+
 class DijkstraAI(AIBase):
     """Pathfinding AI using Dijkstra/A* on a hexagonal grid."""
 
@@ -28,16 +42,20 @@ class DijkstraAI(AIBase):
 
     def _neighbors(self, game_map: Dict, x: int, y: int):
         w, h = game_map["width"], game_map["height"]
-        for direction, (dx, dy) in DIRS.items():
-            nx, ny = x + dx, y + dy
+        q, r = _offset_to_axial(x, y)
+        for direction, (dq, dr) in DIRS.items():
+            aq, ar = q + dq, r + dr
+            nx, ny = _axial_to_offset(aq, ar)
             if 0 <= nx < w and 0 <= ny < h and not self._is_wall(game_map, nx, ny):
                 yield direction, nx, ny
 
     def _heuristic(self, a: Tuple[int, int], b: Tuple[int, int]) -> int:
+        aq, ar = _offset_to_axial(*a)
+        bq, br = _offset_to_axial(*b)
         return (
-            abs(a[0] - b[0])
-            + abs(a[1] - b[1])
-            + abs((a[0] + a[1]) - (b[0] + b[1]))
+            abs(aq - bq)
+            + abs(ar - br)
+            + abs((aq + ar) - (bq + br))
         ) // 2
 
     def _dijkstra(
