@@ -2,6 +2,7 @@ import time
 from playwright.sync_api import sync_playwright
 
 from . import network
+import requests
 from .ai import AIBase
 from .models import ALL_MODELS
 
@@ -35,7 +36,7 @@ def _select_ai() -> type[AIBase]:
     return ALL_MODELS[names[choice - 1]]
 
 
-def _play_session(player_id: str, session_id: str, ai: AIBase | None = None) -> None:
+def _play_session(player_id: str, session_id: str, team_color: str, ai: AIBase | None = None) -> None:
     session_url = f"https://ctf.kyberna.cz/Session/{session_id}"
     print("Launching browser to display game board...")
     with sync_playwright() as pw:
@@ -55,6 +56,17 @@ def _play_session(player_id: str, session_id: str, ai: AIBase | None = None) -> 
 
             if player_state == "GameOver":
                 print("Game over! The session has ended.")
+                score = network.get_score(player_id, session_id)
+                if isinstance(score, dict) and "Red" in score and "Blue" in score:
+                    red = score.get("Red", 0)
+                    blue = score.get("Blue", 0)
+                    print(f"Final score - Red: {red}, Blue: {blue}")
+                    my = red if team_color == "Red" else blue
+                    opp = blue if team_color == "Red" else red
+                    ratio = my / opp if opp != 0 else float("inf")
+                    print(f"Score ratio ({team_color}/opponent): {ratio}")
+                else:
+                    print(f"Final score: {score}")
                 break
 
             if player_state == "Ready":
@@ -69,8 +81,12 @@ def _play_session(player_id: str, session_id: str, ai: AIBase | None = None) -> 
                     direction = str(ai.choose_move(game_map, entities))
                     duration = time.perf_counter() - start
                     print(f"AI chose direction {direction} in {duration:.2f}s")
-                network.send_move(player_id, session_id, int(direction))
-                print("Move sent. Waiting for opponent...")
+                try:
+                    network.send_move(player_id, session_id, int(direction))
+                except requests.RequestException as exc:
+                    print(f"Failed to send move: {exc}")
+                else:
+                    print("Move sent. Waiting for opponent...")
             else:
                 # Sleep only briefly while waiting for the opponent so the UI
                 # remains responsive.
@@ -94,4 +110,4 @@ def run_game(player_id: str) -> None:
         ai = None
         session_id, team_color = network.create_session(player_id, map_name, session_type="Manual")
     print(f"Session ID: {session_id}, Team Color: {team_color}")
-    _play_session(player_id, session_id, ai)
+    _play_session(player_id, session_id, team_color, ai)

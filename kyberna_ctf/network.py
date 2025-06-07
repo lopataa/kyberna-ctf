@@ -62,3 +62,9 @@ def get_entities(player_id: str, session_id: str):
     """Retrieve all entities in the current session."""
     resp = _post("/Game/Entities", {"playerId": player_id, "sessionId": session_id})
     return resp.json()
+
+
+def get_score(player_id: str, session_id: str):
+    """Retrieve the final score for the session."""
+    resp = _post("/Game/Score", {"playerId": player_id, "sessionId": session_id})
+    return resp.json() if resp.headers.get("Content-Type", "").startswith("application/json") else resp.text
