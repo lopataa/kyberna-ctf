@@ -5,6 +5,9 @@ from . import network
 from .ai import AIBase
 from .models import ALL_MODELS
 
+# Polling interval while waiting for the opponent or game to start.
+POLL_INTERVAL = 0.1
+
 
 def _select_map(player_id: str) -> str:
     maps = network.get_maps(player_id)
@@ -67,7 +70,9 @@ def _play_session(player_id: str, session_id: str, ai: AIBase | None = None) -> 
                 network.send_move(player_id, session_id, int(direction))
                 print("Move sent. Waiting for opponent...")
             else:
-                time.sleep(0.25)
+                # Sleep only briefly while waiting for the opponent so the UI
+                # remains responsive.
+                time.sleep(POLL_INTERVAL)
 
         browser.close()
 
