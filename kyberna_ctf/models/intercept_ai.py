@@ -163,7 +163,7 @@ class InterceptAI(DijkstraAI):
     # ------------------------------------------------------------------
     # Decision logic
     # ------------------------------------------------------------------
-    def choose_move(self, game_map: Dict, entities: List[Dict]) -> int:
+    def choose_move(self, game_map: Dict, entities: List[Dict], score: Dict | None = None) -> int:
         player, base, enemy_player, enemy_bases, enemy_flag, my_flag = self._parse_entities(entities)
         self._update_flag_state(player, base, enemy_flag)
 
@@ -191,4 +191,4 @@ class InterceptAI(DijkstraAI):
                 if path:
                     return path[0]
 
-        return super().choose_move(game_map, entities)
+        return super().choose_move(game_map, entities, score)

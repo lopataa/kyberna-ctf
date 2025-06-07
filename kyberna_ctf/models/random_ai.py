@@ -8,5 +8,5 @@ class RandomAI(AIBase):
     def __init__(self, team_color: str | None = None):
         super().__init__(team_color)
 
-    def choose_move(self, game_map: dict, entities: list) -> int:
+    def choose_move(self, game_map: dict, entities: list, score: dict | None = None) -> int:
         return random.randint(1, 6)
